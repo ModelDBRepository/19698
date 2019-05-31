@@ -1,0 +1,198 @@
+static char rcsid[] = "$Id: SynG_ron.c,v 1.0 1997/08/18 23:57:06 venkat Exp $";
+#define VOLTAGE 0
+#define CAF   1
+#define CAS   2
+#define POSTVOLTAGE 3
+#define EK 4
+#define TH 1000 
+
+#include "SynGS_ext.h" 
+static int      DEBUG_SynG = 0;
+static double   savedata[3];
+
+/*
+ * Graded synaptic transmission for leech HN cells.
+ * Needs presynaptic calcium currents and presynaptic voltage 
+ * 1/15/98 Calculates channel current therefore needs postsynaptic voltage.
+ * This is necessary in order to have an Ik field.
+ * However, the simuation will work without it  because the postsynaptic 
+ * compartment calculates the current based on Vm and reversal pot.
+ * This object was modified from synchan.c 
+ */
+
+int SynG(channel,action)
+   register struct SynG_type *channel;
+   Action  *action;
+{
+   double  dt;
+   double g;   
+   int CAS_msg_in = 1,CAF_msg_in = 1,volt_msg_in = 1,pvolt_msg_in =1; /*CHECK*/
+   MsgIn   *msg;
+   double  V, ICaF, ICaS, I_Ca, Ainf, Atau, Binf, Btau, tmp, PV;
+   int	n;
+  
+   if(Debug(DEBUG_SynG) > 1)
+      ActionHeader("SynG",channel,action);
+    
+   SELECT_ACTION(action)
+   {
+   case INIT:
+      channel->Gk = 0;
+      break;
+ 
+   case PROCESS:
+      MSGLOOP(channel,msg)
+         {
+         case VOLTAGE:           /* get presynaptic membrane potential */
+            V = MSGVALUE(msg,0);
+	    break;
+
+	 case CAF:               /* get presynaptic ICaF   */ 
+            ICaF= MSGVALUE(msg,0);
+            break;
+	 
+         case CAS:               /* get presynaptic ICaS   */
+	    ICaS= MSGVALUE(msg, 0);
+	    break;
+
+         case POSTVOLTAGE:       /* get postsynaptic membrane potential */
+            PV = MSGVALUE(msg,0);
+            break;
+
+         case EK:                /* reversal potential Ek */
+            channel->Ek = MSGVALUE(msg,0);
+            break;
+	 }  
+
+      /* hn cell's grad-synaptic transmission 
+      ** calculate state variables and conductance */ 
+      dt = Clockrate(channel);
+
+      /* Ainf, Atau, and Binf are voltage dependent */  
+      Ainf=0e-12+200e-12/(1+exp(-0.4*TH*(V+0.037)));/* 25e-12 to 200e-12 A*/
+                                                      /* Ainf units =A */
+      /*  Atau=.001+1.0/(1+exp(0.3*TH*(V+0.037))+ \
+         exp(-1*TH*(V+0.045)));   */
+
+      Atau=0.10+0.10/(1+exp(0.3*TH*(V+0.045))); /* units = Sec */ 
+
+      Binf=2.0;   /* +8.0/(1+exp(0.21*TH*(V+.0436)));  2 to 10 Sec-1 */ 
+             
+      Btau=0.20;   /* units = Sec   */
+
+      /* exponential euler */
+      channel->B=(channel->B)*exp(-dt/Btau)+Binf*(1-exp(-dt/Btau));
+
+      /* exponential euler */
+      channel->A=(channel->A)*exp(-dt/Atau)+Ainf*(1-exp(-dt/Atau));
+
+      I_Ca=ICaF+ICaS-(channel->A);  /* I in A */
+      if (I_Ca < 0) I_Ca=0.0;
+
+      /* exponential euler */
+      channel->P=(channel->P)*exp(-(channel->B)*dt)+ \
+      I_Ca/(channel->B)*(1-exp(-(channel->B)*dt));
+
+      tmp=(channel->P)*(channel->P)*(channel->P);
+      g = (channel->Gbar)*tmp/(tmp+(channel->C)); /* C=1e-31 */
+
+
+      /* calculate the transmembrane current using the postsynaptic Vm */
+      channel->Gk = g;
+      channel->Ik = (channel->Ek - PV) * g;
+      break;      /* end of case PROCESS */
+
+   case RESET:
+      channel->Gk  = 0;
+      channel->Ik  = 0;
+      channel->A   = 0;
+      channel->P   = 0;
+      break;
+
+   case CHECK:
+      volt_msg_in = 0;
+      CAF_msg_in = 0;
+      CAS_msg_in = 0;
+      pvolt_msg_in = 0;
+
+      MSGLOOP(channel,msg)
+         {
+	 case VOLTAGE: 
+	    volt_msg_in = 1;
+	    break;
+          
+	 case CAF:            
+            CAF_msg_in = 1;
+            break;
+	 
+         case CAS:            
+	    CAS_msg_in = 1;
+	    break;
+
+         case POSTVOLTAGE:
+            pvolt_msg_in = 1;
+            break;
+
+	 }  
+
+         if (volt_msg_in == 0)
+	    ErrorMessage("SynG","No membrane potential.", channel);
+	   
+         if (CAF_msg_in == 0)
+	    ErrorMessage("SynG","No ICaF.", channel);
+
+         if (CAS_msg_in == 0)
+	    ErrorMessage("SynG","No ICaS.", channel);
+
+         if (pvolt_msg_in == 0)
+            ErrorMessage("SynG","No postsynaptic memb. potential.", channel);
+        
+         if ((channel->Gbar) < 0)
+            ErrorMessage("SynG","Gbar must be >= 0.", channel);
+        
+
+      break; /* CHECK */  
+
+case SAVE2:
+      savedata[0] = (double)(channel->A);
+      savedata[1] = (double)(channel->P);
+      n=2;
+      fwrite(&n,sizeof(int),1,(FILE*)action->data);
+      fwrite(savedata,sizeof(double),2,(FILE*)action->data);
+      break; /* SAVE2 */
+
+case RESTORE2:
+	fread(&n,sizeof(int),1,(FILE*)action->data);
+	if (n != 2) {
+	    ErrorMessage("SynG_ron","Invalid savedata length",channel);
+	    return(n);
+	}
+	fread(savedata,sizeof(double),2,(FILE*)action->data);
+	channel->A = savedata[0];
+	channel->P = savedata[1];
+	break;  /* RESTORE2 */
+
+default:
+	InvalidAction("SynG_ron", channel ,action);
+	break;
+
+ 
+   }
+      
+      return (0);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

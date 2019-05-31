@@ -1,0 +1,24 @@
+LOAD_LIBRARIES(){
+	LIBRARY_output();
+	LIBRARY_hh();
+	LIBRARY_devices();
+	LIBRARY_buffer();
+	LIBRARY_segment();
+	LIBRARY_user();
+	LIBRARY_xo();
+	LIBRARY_draw();
+	LIBRARY_widg();
+	LIBRARY_olf();
+	LIBRARY_tools();
+	LIBRARY_concen();
+	LIBRARY_hines();
+	LIBRARY_pore();
+	LIBRARY_newconn();
+	LIBRARY_axon();
+	LIBRARY_synapse();
+	LIBRARY_personal();
+	LIBRARY_simconn();
+	LIBRARY_toolconn();
+	LIBRARY_newconnlib();
+	LIBRARY_leech();
+}

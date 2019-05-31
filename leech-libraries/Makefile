@@ -1,0 +1,272 @@
+# $Id: Usermake,v 1.12 1997/07/25 22:22:13 dhb Exp $
+#
+# Usermake - a Makefile template for compiling a new version of GENESIS
+#
+# GENESIS/XODUS : network simulator - top level user makefile
+# this makefile compiles a version of the simulator containing
+# additional user-defined libraries. See the document NewGenesis.doc
+# in the genesis Doc directory (usually /usr/genesis/Doc) for details
+# on adding a new library.
+#
+#
+# NOTE: This file should be copied into the directory from which you are
+# compiling the new version of GENESIS and given the name 'Makefile'.
+# Before doing a "make", you must edit the file as defined below:
+#
+#
+#
+# 1) set MACHINE= one of {sun3, sun4, Solaris, i386, mips, irix, hpux, Linux, FreeBSD}
+# 2) set OS= one of {BSD,SYSV}
+# 3) set XVERSION= one of {X11R4,X11R5,X11R6}
+# 3) for mips or irix 4.x add '-G 6' (excluding quotes) to CFLAGS and LDFLAGS
+# 5) check other macros in user configurable section
+# 6) type 'make'
+#
+
+#
+# Define "MACHINE" to be one of:
+#
+#	sun3			- for Sun 3's
+#	sun4			- for Sun 4's and Sparcstations
+#	Solaris			- for Sun's running Solaris 2.x
+#	i386			- for Sun 386i's
+#	MASSCOMP		- for Masscomp's
+#	mips			- for decstation 3100's
+#	hpux			- for Hewlett Packard HPUX's
+#	irix			- for Silicon Graphics IRIX's
+#	aix			- for IBM RS/6000's running AIX
+#	Linux			- for PC's running Linux
+#	FreeBSD			- for PC's running FreeBSD
+#
+#
+
+MACHINE = 	Solaris
+OS	=	SYSV
+XVERSION=	X11R5
+
+# GENINST should refer to the GENESIS installation directory.
+
+GENINST =	/bertha/genesis/genesis
+
+# Lex library.  Change to -lfl (or the library file) if using GNU flex.
+
+LEXLIB  =	-lfl -lcurses
+
+# If you want to use the debug option (which will cost you in both
+# speed and memory), use the alternate CFLAGS = -g and LDFLAGS = -g
+# Otherwise use "-O" to optimize.  LDFLAGS are the final link flags.
+#
+# GENESIS is written in non-ANSI C.  If you have an ANSI C compiler
+# add the option to compile K&R C to CFLAGS.
+#
+# Solaris users: cpp is usually in /usr/ccs/lib/cpp
+
+CC	=	/usr/local/bin/gcc
+CPP	=	 /usr/local/lib/gcc-lib/sparc-sun-solaris2.5/2.7.2.3/cpp -P
+CFLAGS	=	-O
+LDFLAGS =
+
+# Location of our X11 libraries
+
+XLIB 	= 	/usr/openwin/lib
+
+
+# Name to give your new GENESIS executable.
+
+SIMNAME =	lgenesis
+
+
+#
+# the user should place the directories of any user library
+# modules in the USERDIR variable
+# e.g. USERDIR = newlib1 newlib2
+#
+
+USERDIR	= newlib1 newlib2
+
+#
+# The user should place the pathnames of any library object modules other
+# than the basic system libraries in the USEROBJ variable.  These should be
+# the same as those used for the TARGET_OBJ variable in the 'Libmake' file.
+# e.g. USEROBJ = newlib1/newlib1.o newlib2/newlib2.o
+#
+
+USEROBJ	= newlib1/newconnlib.o newlib2/leechlib.o
+
+
+#
+# Add the library names of each user library to the USERLIB macro.  The
+# library name is set in each library's Makefile as the variable name
+# LIBRARY_NAME.
+#
+
+USERLIB	=  newconnlib leech 
+
+#
+# The user should place any additional system dependent libraries in the
+# SYSLIBS variable.  Known system dependent libraries include:
+#
+# irix
+#	SYSLIBS = -lmalloc
+#
+
+SYSLIBS =
+
+
+#
+# Optional GENESIS libraries
+#
+
+#
+# oldconn
+#
+# These are the GENESIS 1.4 connection facility compatibility libraries.
+# Comment the OLDCONN and OLDCONNLIB macros to exclude 1.4 style
+# connections.  You must also remove the libraries from the liblist
+# file.
+#
+# NOTE: Several of the simulations in the Scripts
+# directory use the oldconn library (e.g. MultiCell, Piriform,
+# etc.) and will not run without oldconn.
+#
+
+OLDCONN	=	$(SIMLIB)/axonlib.o $(SIMLIB)/synlib.o $(SIMLIB)/perlib.o $(SIMLIB)/simconnlib.o $(SIMLIB)/toolconnlib.o
+OLDCONNLIB =	axon synapse personal simconn toolconn
+
+#
+# kinetics
+#
+# This library is for kinetic modeling.  Comment KINETICS and KINETICSLIB
+# to exclude the kinetics library.
+#
+# NOTE: the kkit kinetics modeling kit requires the kinetics library.
+#
+
+#KINETICS =	$(SIMLIB)/kinlib.o
+#KINETICSLIB =	kin
+
+#
+# diskio
+#
+# The diskio and related objects from this library provide a disk_in
+# disk_out backward compatible interface for netCDF portable binary
+# files.  Comment out the DISKIO and DISKIOLIB macros to exclude the
+# diskio library.  There are currently no kits or tutorials which
+# depend on this library.
+#
+# NOTE: The netCDF library is known not to compile on Linux a.out
+# systems.  Any Linux 1.3 or later (and some 1.2 versions) will work.
+#
+
+#DISKIO =	$(SIMLIB)/diskiolib.o $(SIMLIB)/libnetcdf.a
+#DISKIOLIB =	diskio
+
+#
+# Xodus
+#
+# This is the graphics widget and draw library.  It is needed by
+# just about everything in the Scripts directory.  If you want to
+# run GENESIS in batch mode without graphics, comment out XLIBS,
+# XODUS and XODUSLIB to get a non-Xodus genesis.
+#
+
+XLIBS   =       -L$(XLIB)  -lXt  -lXmu  -lXext  -lX11
+XODUS 	=	$(SIMLIB)/drawlib.o  $(SIMLIB)/widglib.o  $(SIMLIB)/xolib.o  $(SIMLIB)/libDraw.a  $(SIMLIB)/libWidg.a  $(SIMLIB)/libXo.a
+XODUSLIB =	xo  draw  widg
+
+# end of optional libraries
+
+
+###################################################################
+# nothing beyond this point should have to be modified by the user
+###################################################################
+
+SHELL	=	/bin/sh
+
+SIMLIB 	= 	$(GENINST)/lib
+SIMSRC 	= 	$(GENINST)/src
+
+GENESIS = 	$(SIMLIB)/simlib.o \
+		$(SIMLIB)/ss.o \
+		$(SIMLIB)/shelllib.o \
+		$(SIMLIB)/utillib.o \
+		$(SIMLIB)/buflib.o \
+		$(SIMLIB)/seglib.o \
+		$(SIMLIB)/hhlib.o \
+		$(SIMLIB)/devlib.o \
+		$(SIMLIB)/outlib.o \
+		$(SIMLIB)/olflib.o \
+		$(SIMLIB)/toollib.o \
+		$(SIMLIB)/conclib.o \
+		$(SIMLIB)/userlib.o \
+                $(SIMLIB)/hineslib.o \
+                $(SIMLIB)/porelib.o \
+		$(OLDCONN) \
+		$(SIMLIB)/newconnlib.o \
+		$(KINETICS) \
+		$(DISKIO) \
+		loadlib.o
+
+
+LIBS 	= 	$(XLIBS) $(LEXLIB) -lm $(SYSLIBS)
+
+LIBLIST =	output \
+		hh \
+		devices \
+		buffer \
+		segment \
+		user \
+		$(XODUSLIB) \
+		olf \
+		tools \
+		concen \
+		hines \
+		pore \
+		newconn \
+		$(DISKIOLIB) \
+		$(OLDCONNLIB) \
+		$(KINETICSLIB) \
+		$(USERLIB)
+
+default: userlibs $(SIMNAME)
+
+userlibs:
+	@(for i in $(USERDIR); do echo cd $$i; cd $$i; make CPP="$(CPP)" CC="$(CC)" CFLAGS="$(CFLAGS) -D$(MACHINE) -D$(OS) -D$(XVERSION)" GENINST="$(GENINST)"; cd ..;done)
+
+liblist: Makefile
+	echo "# liblist - This file is generated automatically." > liblist
+	echo "#           DO NOT EDIT.  Edit Makefile instead." >> liblist
+	echo $(LIBLIST) | tr ' ' '\012' >> liblist
+
+loadlib.c: liblist
+	$(SIMSRC)/libsh < liblist > loadlib.c
+
+clean:
+	@(for i in $(USERDIR); do echo cd $$i; cd $$i; make clean; cd ..;done)
+	@rm -f loadlib.[oc]
+
+$(SIMNAME): $(GENESIS) $(XODUS) $(USEROBJ)
+	$(CC) $(LDFLAGS) $(GENESIS) $(XODUS) $(USEROBJ) $(LIBS) -o $(SIMNAME)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

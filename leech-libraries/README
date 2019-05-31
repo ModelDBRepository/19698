@@ -1,0 +1,72 @@
+This directory contains source code for two new libraries that need to be added
+to your GENESIS executable in order to use the network leech model.  These are
+meant to be added to an already-compiled version of GENESIS, so you will _not_
+need to recompile your GENESIS program; you'll just be creating a new GENESIS
+program from your already-compiled version.
+
+*  If you use a common machine, such as a Sun or a Linux machine, check to
+   make sure we haven't placed a pre-compiled version on our ftp site.  It
+   might save you some time to get a pre-compiled version.
+
+To add the libraries, do the following:
+
+1)  copy Makefile.usermake from the GENESIS/Scripts/newlib directory this
+    directory and name it Makefile.
+
+2)  Follow the directions in newly copied Makefile, such as setting the machine
+    type, setting your compiler,  and giving the new executable a name.
+
+3)  Also within Makefile, set the following:
+
+     USERDIR	= newlib1 newlib2
+
+     USEROBJ	= newlib1/newconnlib.o newlib2/leechlib.o
+
+     USERLIB	= newconnlib leech
+
+4)  Edit the line "GENESIS = /usr/local/genesis" in both Makefile and
+    newlib1/Makefile so it points to your GENESIS installation directory.
+
+5)  Make sure you have done a "make install" in the GENESIS/src directory.  (It
+    is possible to use GENESIS without doing this, but this Makefile assumes
+    that you have put a copy of each library in GENESIS/lib.)
+
+6)  If you use any libraries that are not in the standard GENESIS distribution
+    (such as spikelib; look for GENESIS/lib/spikelib to see if you have it), 
+    add them to the "GENESIS" and "LIBLIST" variables in the Makefile.
+
+7)  Type "make".
+
+This directory contains an example Makefile file for Linux.  It includes the
+spike library and uses GNU development tools.  (cc maps to gcc on our system.)
+
+Questions?  Email andrew@biology.emory.edu or vanhoosr@biology.emory.edu.
+
+
+P.S. In order for the leech model neurons to oscillate properly, the state 
+variables must be set to appropriate intial values.  This may be done with the
+genesis restore command which saves the necessary state variables of a 
+simulation in a binary format.  Unfortunately a binary file created on one
+machine may not work on another.  To avoid this problem, we restore the values
+of the state variables  using a series of setfield commands.  If you press the
+INIT button in the simulations this will cause this series of setfield 
+commands to be executed.  There are a few state variables in the Synchan object
+that are readonly in the standard genesis distribution.  Trying to set the 
+fields of these variables will lead to error messages.  To avoid these    
+errors copy the file newconn.g found in this directory to the 
+/genesis/src/newconn directory.  This will overwrite the existing newconn.  
+Alternatively, simply edit the newconn.g file to make Ik, Gk, X, and Y 
+readwrite.  Genesis will have to be recomplied in order for these changes to 
+take effect.  Another way to work around this problem is to inject a current
+pulse into one of the cells (e.g. -.1 nA for 5 sec) to help the cells begin to 
+oscillate and then use the binary save option to save a new set of initial 
+state variables.
+
+
+
+
+
+
+
+
+
